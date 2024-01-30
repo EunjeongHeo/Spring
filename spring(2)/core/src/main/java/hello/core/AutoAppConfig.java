@@ -9,15 +9,14 @@ import static org.springframework.context.annotation.ComponentScan.*;
 
 @Configuration
 @ComponentScan(
+        //basePackages = "hello.core",
         excludeFilters = @Filter(type = FilterType.ANNOTATION, classes = Configuration.class))
 
 public class AutoAppConfig {
-    /*
     @Bean(name = "memoryMemberRepository")
     public MemberRepository memberRepository() {
         return new MemoryMemberRepository();
     }
-    */
 }
 
 
