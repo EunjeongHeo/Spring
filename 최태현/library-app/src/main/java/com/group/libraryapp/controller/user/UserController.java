@@ -2,13 +2,11 @@ package com.group.libraryapp.controller.user;
 
 import com.group.libraryapp.domain.user.User;
 import com.group.libraryapp.dto.user.request.UserCreateRequest;
+import com.group.libraryapp.dto.user.request.UserUpdateRequest;
 import com.group.libraryapp.dto.user.response.UserResponse;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -42,10 +40,7 @@ public class UserController {
     public List<UserResponse> getUsers() {
         String sql = "SELECT * FROM user";
 
-        // jdbcTemplate 객체의 query 메서드는 첫 번째 파라미터인 SQL 쿼리를 실행하고,
-        // 그 결과를 query 메서드의 두 번째 파라미터 객체에 있는 RowMapper 메서드의 파라미터로 전달한다.
-        // (람다식 기능 : RowMapper 인터페이스를 사용한 익명 객체를 생성하여 RowMapper 함수를 오버라이딩한다.)
-        // (오버라이딩된 RowMapper 메서드의 기능 : 각 행의 데이터를 객체로 매핑하는 역할을 한다.)
+        // [람다식 부분 역할] : SQL 쿼리 실행 결과의 각 행을 자바 객체로 매핑하는 역할
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             long id = rs.getLong("id"); // ResultSet rs 에서 "id" 컬럼의 값을 long 타입으로 추출
             String name = rs.getString("name"); // ResultSet rs 에서 "name" 컬럼의 값을 String 타입으로 추출
@@ -53,7 +48,7 @@ public class UserController {
             return new UserResponse(id, name, age); //추출한 값을 사용하여 UserResponse 객체를 생성하고 반환한다.
         });
 
-        /*람다식 사용 전 원래 코드
+        /*람다식 사용 전 원래 코드 (익명클래스는 사용했음)
         return jdbcTemplate.query(sql, new RowMapper<UserResponse>() {
             @Override
             public UserResponse mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -65,5 +60,43 @@ public class UserController {
         });
         */
     }
+
+    @PutMapping("/user")
+    public void UpdateUser(@RequestBody UserUpdateRequest request){
+        String sql = "UPDATE user SET name = ? WHERE id = ?";
+        jdbcTemplate.update(sql, request.getName(), request.getId());
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
