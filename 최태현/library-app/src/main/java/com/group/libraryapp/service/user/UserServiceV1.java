@@ -9,11 +9,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class UserService {
+public class UserServiceV1 {
 
     private final UserJdbcRepository userJdbcRepository;
 
-    public UserService(UserJdbcRepository userJdbcRepository) {
+    public UserServiceV1(UserJdbcRepository userJdbcRepository) {
         this.userJdbcRepository = userJdbcRepository;
     }
 
