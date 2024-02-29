@@ -30,6 +30,24 @@ public class User {
     public Integer getAge() {
         return age;
     }
+
+    public Long getId() {
+        return id;
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
