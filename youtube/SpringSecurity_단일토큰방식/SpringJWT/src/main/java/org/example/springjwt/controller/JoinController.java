@@ -17,8 +17,12 @@ public class JoinController {
     public String joinProcess(@RequestBody JoinDTO joinDTO){
 
         System.out.println(joinDTO.getUsername());
-        joinService.joinProcess(joinDTO);
+        boolean success = joinService.joinProcess(joinDTO);
 
-        return "OK";
+        if (success) {
+            return "회원가입 성공";
+        } else {
+            return "회원가입 실패";
+        }
     }
 }

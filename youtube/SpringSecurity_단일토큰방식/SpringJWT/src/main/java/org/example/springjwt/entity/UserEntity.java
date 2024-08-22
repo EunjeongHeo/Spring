@@ -4,11 +4,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
-@Getter @Setter
+@Getter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserEntity {
 
     @Id
@@ -18,5 +20,5 @@ public class UserEntity {
     private String username;
     private String password;
 
-    private String role;
+    private String role; // String enum으로 하는게 좋지만, 강의에서는 간단하게 String으로 함.
 }
