@@ -1,15 +1,22 @@
 package org.example.springjwt.jwt;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.springjwt.dto.LoginDTO;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.util.StreamUtils;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 
 @RequiredArgsConstructor // AuthenticationManager 에 대한 생성자 주입
@@ -22,15 +29,40 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
 
-        // 클라이언트 요청에서 username, password 추출
-        String username = obtainUsername(request);
-        String password = obtainPassword(request);
+        // JSON 요청인지 확인
+        if ("application/json".equals(request.getContentType())) {
+            try {
+                // ObjectMapper를 사용해 JSON 데이터를 Java 객체로 변환
+                ObjectMapper objectMapper = new ObjectMapper();
+                ServletInputStream inputStream = request.getInputStream();
+                String messageBody = StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
 
-        // 추출한 username 과 password 를 UsernamePasswordAuthenticationToken 타입에 담는다. (스프링 시큐리티에서 username 과 password 를 검증하기 위해서 해당 타입으로의 구현이 필요함)
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null); // 원래는 마지막 인자에 role 값 같은 게 들어가야 한다.
+                // LoginDTO는 요청을 담을 DTO 클래스
+                LoginDTO loginDTO = objectMapper.readValue(messageBody, LoginDTO.class);
 
-        // 정보를 담은 해당 Token 을 AuthenticationManager 로 전달 (우리는 이 Token 을 넘겨주기만 하면 AuthenticationManager 가 자동으로 검증을 수행해준다.)
-        return authenticationManager.authenticate(authToken);
+                // username과 password를 추출하여 UsernamePasswordAuthenticationToken 생성
+                String username = loginDTO.getUsername();
+                String password = loginDTO.getPassword();
+
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
+
+                // 인증 매니저에게 전달하여 인증 시도
+                return this.getAuthenticationManager().authenticate(authToken);
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            // JSON이 아닌 경우에도 로그인 처리 하도록 구현
+
+            // username과 password를 추출하여 UsernamePasswordAuthenticationToken 생성
+            String username = obtainUsername(request);
+            String password = obtainPassword(request);
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
+
+            // 정보를 담은 해당 Token 을 AuthenticationManager 로 전달
+            return this.getAuthenticationManager().authenticate(authToken);
+        }
 
     }
 
@@ -38,6 +70,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     public void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication){
         // JWT 발급 로직 구현
+        System.out.println("성공~~~~~");
     }
 
 
@@ -45,6 +78,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed){
         // 실패 처리 로직 구현
+        System.out.println("실패~~~~~");
     }
 
 
