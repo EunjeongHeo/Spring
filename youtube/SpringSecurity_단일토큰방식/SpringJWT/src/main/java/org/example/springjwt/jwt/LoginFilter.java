@@ -47,7 +47,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
 
                 // 인증 매니저에게 전달하여 인증 시도
-                return this.getAuthenticationManager().authenticate(authToken);
+                return authenticationManager.authenticate(authToken);
 
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -61,7 +61,7 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(username, password, null);
 
             // 정보를 담은 해당 Token 을 AuthenticationManager 로 전달
-            return this.getAuthenticationManager().authenticate(authToken);
+            return authenticationManager.authenticate(authToken);
         }
 
     }
