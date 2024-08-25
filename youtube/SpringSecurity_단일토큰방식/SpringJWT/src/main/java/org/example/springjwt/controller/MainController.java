@@ -1,5 +1,6 @@
 package org.example.springjwt.controller;
 
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -9,6 +10,8 @@ public class MainController {
     @GetMapping("/")
     public String mainP() {
 
-        return "main Controller";
+        String name = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        return "Main Controller : " + name;
     }
 }

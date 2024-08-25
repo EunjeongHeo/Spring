@@ -22,7 +22,6 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserEntity userData = userRepository.findByUsername(username);
 
         if(userData != null){
-
             // UserDetails 에 담아서 return 하면 AuthenticationManager 가 검증함
             return new CustomUserDetails(userData);
         }

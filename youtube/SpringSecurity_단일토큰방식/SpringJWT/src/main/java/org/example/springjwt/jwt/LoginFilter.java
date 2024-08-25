@@ -7,23 +7,28 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.example.springjwt.dto.CustomUserDetails;
 import org.example.springjwt.dto.LoginDTO;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Iterator;
 
 
-@RequiredArgsConstructor // AuthenticationManager 에 대한 생성자 주입
+@RequiredArgsConstructor
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
 
 
     private final AuthenticationManager authenticationManager;
+    private final JWTUtil jwtUtil;
 
     // 검증을 담당하는 메서드
     @Override
@@ -69,16 +74,32 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     // 로그인 성공 시 자동 호출되어 실행되는 메서드
     @Override
     public void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication){
-        // JWT 발급 로직 구현
-        System.out.println("성공~~~~~");
+
+        // CustomUserDetails 객체 추출
+        CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
+
+        // CustomUserDetails 객체로부터 username 추출
+        String username = customUserDetails.getUsername();
+
+        // CustomUserDetails 객체로부터 role 추출
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        Iterator<? extends GrantedAuthority> iterator = authorities.iterator();
+        GrantedAuthority auth = iterator.next();
+        String role = auth.getAuthority();
+
+        // 추출한 username 과 role을 기반으로 JWT 토큰 생성
+        String token = jwtUtil.createJwt(username, role, 60*60*10L); // 인자 : username, role, 유효시간(임의로 36,000초인 10시간으로 지정)
+
+        // jwt 토큰을 응답 헤더에 담기
+        response.addHeader("Authorization","Bearer " + token); // 접두사 "Bearer " 필수
     }
 
 
     // 로그인 실패 시 자동 호출되어 실행되는 메서드
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed){
-        // 실패 처리 로직 구현
-        System.out.println("실패~~~~~");
+        // 401 상태코드 응답
+        response.setStatus(401);
     }
 
 
