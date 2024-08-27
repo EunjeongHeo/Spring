@@ -28,7 +28,7 @@ public class JoinService {
         UserEntity userEntity = UserEntity.builder()
                 .username(username)
                 .password(bCryptPasswordEncoder.encode(password)) // 암호화 진행
-                .role("ROLE_USER")
+                .role("ROLE_ADMIN")
                 .build();
 
         userRepository.save(userEntity);

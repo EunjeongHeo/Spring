@@ -4,11 +4,13 @@ package org.example.springjwt.jwt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.springjwt.dto.CustomUserDetails;
 import org.example.springjwt.dto.LoginDTO;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -75,11 +77,8 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     public void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authentication){
 
-        // CustomUserDetails 객체 추출
-        CustomUserDetails customUserDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        // CustomUserDetails 객체로부터 username 추출
-        String username = customUserDetails.getUsername();
+        // Authentication 객체로부터 username 추출
+        String username = authentication.getName();
 
         // CustomUserDetails 객체로부터 role 추출
         Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
@@ -88,10 +87,14 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
         String role = auth.getAuthority();
 
         // 추출한 username 과 role을 기반으로 JWT 토큰 생성
-        String token = jwtUtil.createJwt(username, role, 60*60*10L); // 인자 : username, role, 유효시간(임의로 36,000초인 10시간으로 지정)
+        String access = jwtUtil.createJwt("access", username, role, 600000L); // 10분
+        String refresh = jwtUtil.createJwt("refresh", username, role, 86400000L); // 24시간
 
-        // jwt 토큰을 응답 헤더에 담기
-        response.addHeader("Authorization","Bearer " + token); // 접두사 "Bearer " 필수
+        //응답 설정
+        response.setHeader("access", access); // access 토큰 헤더에 응답
+        response.addCookie(createCookie("refresh", refresh)); // refresh 토큰 쿠키에 응답
+        response.setStatus(HttpStatus.OK.value());
+
     }
 
 
@@ -100,6 +103,18 @@ public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed){
         // 401 상태코드 응답
         response.setStatus(401);
+    }
+
+    // 쿠키 생성 메서드
+    private Cookie createCookie(String key, String value) {
+
+        Cookie cookie = new Cookie(key, value);
+        cookie.setMaxAge(24 * 60 * 60); // 쿠키 생명 주기 설정
+//        cookie.setSecure(true); // https 통신의 경우 설정
+//        cookie.setPath("/"); // 쿠키 적용 범위 설정
+        cookie.setHttpOnly(true); // 자바스크립트로 쿠키에 접근 못하도록 막기
+
+        return cookie;
     }
 
 

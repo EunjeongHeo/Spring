@@ -1,5 +1,6 @@
 package org.example.springjwt.jwt;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -33,16 +34,26 @@ public class JWTUtil {
         return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("role", String.class);
     }
 
+    // 토큰에서 category(access/refresh 종류) 추출하는 메서드
+    public String getCategory(String token) {
+        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().get("category", String.class);
+    }
+
     // 토큰에서 만료여부 검증,추출하는 메서드
     public Boolean isExpired(String token) {
-        // jwt 파싱해서 secretKey로 서명검증 및 payload에서 현재시간 기준 만료여부 추출
-        return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
+        try {
+            // jwt 파싱해서 secretKey로 서명검증 및 payload에서 현재시간 기준 만료여부 추출
+            return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload().getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return true; // 만료된 경우 true 반환
+        }
     }
 
     // 토큰 생성 메서드
-    // username, role, 토큰유효시간 을 입력받아 JWT 토큰을 생성해 String 형태로 반환
-    public String createJwt(String username, String role, Long expiredMs) {
+    // category, username, role, 토큰유효시간 을 입력받아 JWT 토큰을 생성해 String 형태로 반환
+    public String createJwt(String category, String username, String role, Long expiredMs) {
         return Jwts.builder()
+                .claim("category", category) // access, refresh 판단용
                 .claim("username", username)
                 .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis())) // 토큰 발행 시각

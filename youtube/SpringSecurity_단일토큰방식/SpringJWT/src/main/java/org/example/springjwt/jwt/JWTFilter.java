@@ -5,7 +5,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.User;
 import org.example.springjwt.dto.CustomUserDetails;
 import org.example.springjwt.entity.UserEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 
 
 @RequiredArgsConstructor
@@ -24,30 +24,43 @@ public class JWTFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        // request 헤더에서 jwt 토큰 추출
-        String authorization = request.getHeader("Authorization");
-        System.out.println("1. " + authorization);
+        // request 헤더에서 access 토큰 추출
+        String accessToken = request.getHeader("access");
 
-        // Authorization 헤더 검증
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            System.out.println("token null");
+        // 토큰이 없다면 다음 필터로 넘김
+        if (accessToken == null) {
             filterChain.doFilter(request, response); // 다음 필터로 요청, 응답 전달
-            return; // 헤더 검증 실패 시 메서드 종료 (필수)
+            return; // 메서드 종료 (필수)
         }
 
-        // Bearer 제거 후 순수 토큰 추출
-        String token = authorization.split(" ")[1]; // 요청 헤더에서 추출한 jwt 토큰을 공백을 기준으로 분리하여 생성된 배열에서 두 번째 인자 추출 <= ["Bearer", "토큰값"]
+        // 토큰 만료 여부 확인, 만료 시 다음 필터로 넘기지 않음
+        if (jwtUtil.isExpired(accessToken)) { // 만료 되었다면
+            // response body
+            PrintWriter writer = response.getWriter();
+            writer.print("access token expired");
 
-        // 토큰 소멸 여부 검증
-        if (jwtUtil.isExpired(token)) {
-            System.out.printf("token expired");
-            filterChain.doFilter(request, response); // 다음 필터로 요청, 응답 전달
-            return; // 토큰 만료 시 메서드 종료 (필수)
+            // response status code
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+            return; // 메서드 종료 (필수)
+        }
+
+        // access 토큰 여부 확인 : "access" 헤더에서 추출한 토큰이 실제로 "access" 카테고리를 갖고 있는지 확인하여, 잘못된 토큰 사용을 방지
+        String category = jwtUtil.getCategory(accessToken);
+        if (!category.equals("access")) {
+            // response body
+            PrintWriter writer = response.getWriter();
+            writer.print("invalid access token");
+
+            // response status code
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+
+            return; // 메서드 종료 (필수)
         }
 
         // 토큰에서 username 과 role 추출
-        String username = jwtUtil.getUsername(token);
-        String role = jwtUtil.getRole(token);
+        String username = jwtUtil.getUsername(accessToken);
+        String role = jwtUtil.getRole(accessToken);
 
         // 추출한 정보로 userEntity 생성
         UserEntity userEntity = UserEntity.builder()
@@ -68,9 +81,5 @@ public class JWTFilter extends OncePerRequestFilter {
         // 다음 필터로 요청, 응답 전달
         filterChain.doFilter(request, response);
 
-        return;
-
     }
-
-
 }
